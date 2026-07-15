@@ -7,11 +7,18 @@ const router = Router();
 // Export Excel report for a specific date
 router.get('/excel', async (req: Request, res: Response) => {
   try {
-    const timestamp = req.query.timestamp as string;
+    let timestamp = req.query.timestamp as string;
     const date = req.query.date as string;
 
     if (!timestamp && !date) {
       return res.status(400).json({ message: 'Either date or timestamp parameter is required.' });
+    }
+
+    // Normalize timestamp format for robust matching (e.g. convert ISO string to YYYY-MM-DD HH:MM:SS)
+    if (timestamp) {
+      if (timestamp.includes('T')) {
+        timestamp = timestamp.replace('T', ' ').substring(0, 19);
+      }
     }
 
     // Fetch records based on timestamp or date

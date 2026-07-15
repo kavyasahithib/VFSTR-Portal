@@ -109,9 +109,15 @@ export default function Reports() {
 
   const formatTimeOnly = (dtStr: string) => {
     try {
-      const [datePart, timePart] = dtStr.split(' ');
+      // Normalize 'T' in ISO formats to a space to split consistently
+      const cleanStr = dtStr.replace('T', ' ');
+      const [datePart, timePart] = cleanStr.split(' ');
       const [year, month, day] = datePart.split('-').map(Number);
-      const [hours, minutes, seconds] = timePart.split(':').map(Number);
+      
+      // Get the HH:MM:SS part, removing any timezone/fractional suffixes
+      const timePartClean = timePart.split('.')[0].split('+')[0].split('Z')[0];
+      const [hours, minutes, seconds] = timePartClean.split(':').map(Number);
+      
       const dateObj = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
       return dateObj.toLocaleTimeString('en-US', {
         hour: 'numeric',

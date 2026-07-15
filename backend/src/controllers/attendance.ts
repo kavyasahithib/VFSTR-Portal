@@ -98,6 +98,7 @@ router.get('/history', async (req: Request, res: Response) => {
       SELECT 
         created_at,
         date,
+        MAX(subject) as subject,
         SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present,
         SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) as absent,
         COUNT(*) as total
@@ -105,8 +106,23 @@ router.get('/history', async (req: Request, res: Response) => {
       GROUP BY created_at
       ORDER BY created_at DESC
     `;
-    const history = await dbQuery.all(sql);
-    res.json(history);
+    const history = await dbQuery.all<any>(sql);
+    
+    // Normalize created_at format for robust frontend handling (both SQLite and Postgres)
+    const formattedHistory = history.map((item) => {
+      let createdAtStr = item.created_at;
+      if (createdAtStr instanceof Date) {
+        createdAtStr = createdAtStr.toISOString().replace('T', ' ').substring(0, 19);
+      } else if (typeof createdAtStr === 'string' && createdAtStr.includes('T')) {
+        createdAtStr = createdAtStr.replace('T', ' ').substring(0, 19);
+      }
+      return {
+        ...item,
+        created_at: createdAtStr
+      };
+    });
+
+    res.json(formattedHistory);
   } catch (err) {
     console.error('Fetch history error:', err);
     res.status(500).json({ message: 'Internal server error.' });
