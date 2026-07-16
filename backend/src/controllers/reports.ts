@@ -173,6 +173,9 @@ router.get('/excel', async (req: Request, res: Response) => {
     // Data rows start at Row 7
     let currentRowIdx = 7;
     for (const record of records) {
+      if (record.status !== 'Absent') {
+        continue;
+      }
       const row = worksheet.getRow(currentRowIdx);
       row.values = [
         record.roll_no,

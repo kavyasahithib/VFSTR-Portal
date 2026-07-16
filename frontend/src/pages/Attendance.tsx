@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '../utils/api';
 import { Search, Calendar, Check, X, FileSpreadsheet, Users } from 'lucide-react';
 
@@ -81,15 +81,23 @@ export default function Attendance() {
     setRecords((prev) => prev.map((rec) => ({ ...rec, status })));
   };
 
-  const filteredRecords = records.filter(
-    (rec) =>
-      rec.name.toLowerCase().includes(search.toLowerCase()) ||
-      rec.reg_no.includes(search) ||
-      rec.roll_no.includes(search)
-  );
+  const filteredRecords = useMemo(() => {
+    return records.filter(
+      (rec) =>
+        rec.name.toLowerCase().includes(search.toLowerCase()) ||
+        rec.reg_no.includes(search) ||
+        rec.roll_no.includes(search)
+    );
+  }, [records, search]);
 
-  const presentCount = records.filter((r) => r.status === 'Present').length;
-  const absentCount = records.filter((r) => r.status === 'Absent').length;
+  const presentCount = useMemo(() => {
+    return records.filter((r) => r.status === 'Present').length;
+  }, [records]);
+
+  const absentCount = useMemo(() => {
+    return records.filter((r) => r.status === 'Absent').length;
+  }, [records]);
+
   const totalCount = records.length;
 
   const handleSubmit = async () => {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '../utils/api';
 import { FileSpreadsheet, Calendar, Search, User, Info } from 'lucide-react';
 
@@ -118,7 +118,7 @@ export default function Reports() {
       const timePartClean = timePart.split('.')[0].split('+')[0].split('Z')[0];
       const [hours, minutes, seconds] = timePartClean.split(':').map(Number);
       
-      const dateObj = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds));
+      const dateObj = new Date(year, month - 1, day, hours, minutes, seconds);
       return dateObj.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
@@ -147,12 +147,24 @@ export default function Reports() {
       .join(' ');
   };
 
-  const filteredStudents = studentList.filter(
-    (s) =>
-      s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      s.reg_no.includes(studentSearch) ||
-      s.roll_no.includes(studentSearch)
-  );
+  const groupedHistory = useMemo(() => {
+    return history.reduce<Record<string, HistoryItem[]>>((acc, item) => {
+      if (!acc[item.date]) {
+        acc[item.date] = [];
+      }
+      acc[item.date].push(item);
+      return acc;
+    }, {});
+  }, [history]);
+
+  const filteredStudents = useMemo(() => {
+    return studentList.filter(
+      (s) =>
+        s.name.toLowerCase().includes(studentSearch.toLowerCase()) ||
+        s.reg_no.includes(studentSearch) ||
+        s.roll_no.includes(studentSearch)
+    );
+  }, [studentList, studentSearch]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -196,103 +208,93 @@ export default function Reports() {
             </div>
           ) : (
             <div className="space-y-3 animate-fade-in">
-              {(() => {
-                const groupedHistory = history.reduce<Record<string, HistoryItem[]>>((acc, item) => {
-                  if (!acc[item.date]) {
-                    acc[item.date] = [];
-                  }
-                  acc[item.date].push(item);
-                  return acc;
-                }, {});
+              {Object.entries(groupedHistory).map(([groupDate, sessions]) => {
+                const isExpanded = expandedDates.includes(groupDate);
+                const [year, month, day] = groupDate.split('-').map(Number);
+                const dateObj = new Date(year, month - 1, day);
+                const formattedGroupDate = dateObj.toLocaleDateString('en-US', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  weekday: 'short'
+                });
 
-                return Object.entries(groupedHistory).map(([groupDate, sessions]) => {
-                  const isExpanded = expandedDates.includes(groupDate);
-                  const [year, month, day] = groupDate.split('-').map(Number);
-                  const dateObj = new Date(year, month - 1, day);
-                  const formattedGroupDate = dateObj.toLocaleDateString('en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    weekday: 'short'
-                  });
-
-                  return (
-                    <div 
-                      key={groupDate} 
-                      className="glass-panel rounded-2xl border border-white/60 dark-theme:border-slate-800/80 shadow-sm overflow-hidden transition-all"
+                return (
+                  <div 
+                    key={groupDate} 
+                    className="glass-panel rounded-2xl border border-white/60 dark-theme:border-slate-800/80 shadow-sm overflow-hidden transition-all"
+                  >
+                    {/* Date Row Header */}
+                    <button
+                      onClick={() => toggleDateExpand(groupDate)}
+                      className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50/40 dark-theme:hover:bg-slate-900/10 transition-colors focus:outline-none"
                     >
-                      {/* Date Row Header */}
-                      <button
-                        onClick={() => toggleDateExpand(groupDate)}
-                        className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50/40 dark-theme:hover:bg-slate-900/10 transition-colors focus:outline-none"
-                      >
-                        <div className="flex items-center space-x-3 text-left">
-                          <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark-theme:text-blue-400 flex items-center justify-center shrink-0">
-                            <Calendar size={16} />
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-sm text-slate-800 dark-theme:text-slate-100">
-                              {formattedGroupDate}
-                            </h4>
-                            <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block mt-0.5">
-                              {sessions.length} {sessions.length === 1 ? 'Period' : 'Periods'} Recorded
-                            </span>
-                          </div>
+                      <div className="flex items-center space-x-3 text-left">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark-theme:text-blue-400 flex items-center justify-center shrink-0">
+                          <Calendar size={16} />
                         </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-6 h-6 rounded-lg border border-slate-200 dark-theme:border-slate-800 flex items-center justify-center text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                            <svg fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-3 h-3">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                            </svg>
-                          </div>
+                        <div>
+                          <h4 className="font-bold text-sm text-slate-800 dark-theme:text-slate-100">
+                            {formattedGroupDate}
+                          </h4>
+                          <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block mt-0.5">
+                            {sessions.length} {sessions.length === 1 ? 'Period' : 'Periods'} Recorded
+                          </span>
                         </div>
-                      </button>
+                      </div>
+                      
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-6 h-6 rounded-lg border border-slate-200 dark-theme:border-slate-800 flex items-center justify-center text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                          <svg fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-3 h-3">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                          </svg>
+                        </div>
+                      </div>
+                    </button>
 
-                      {/* Expandable Session Area */}
-                      {isExpanded && (
-                        <div className="border-t border-slate-100 dark-theme:border-slate-800/60 bg-slate-50/30 dark-theme:bg-slate-950/10 px-5 py-3 space-y-3 divide-y divide-slate-100 dark-theme:divide-slate-800/60">
-                          {sessions.map((session, idx) => {
-                            const rate = Math.round((session.present / session.total) * 100);
-                            const sessionTime = formatTimeOnly(session.created_at);
-                            return (
-                              <div key={session.created_at} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${idx > 0 ? 'pt-3' : ''}`}>
-                                <div className="space-y-1">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="font-bold text-slate-800 dark-theme:text-slate-200 text-sm">
-                                      {formatSubjectName(session.subject)}
-                                    </span>
-                                    <span className="text-slate-300 dark-theme:text-slate-700">•</span>
-                                    <span className="text-[10px] font-semibold text-slate-400">
-                                      {sessionTime}
-                                    </span>
-                                  </div>
-                                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-500 font-semibold text-[10px]">
-                                    <span>Total: {session.total}</span>
-                                    <span className="text-emerald-600 dark-theme:text-emerald-400">Present: {session.present}</span>
-                                    <span className="text-rose-600 dark-theme:text-rose-400">Absent: {session.absent}</span>
-                                    <span className="text-slate-700 dark-theme:text-slate-300 bg-slate-100 dark-theme:bg-slate-800/60 px-1.5 py-0.5 rounded">Rate: {rate}%</span>
-                                  </div>
+                    {/* Expandable Session Area */}
+                    {isExpanded && (
+                      <div className="border-t border-slate-100 dark-theme:border-slate-800/60 bg-slate-50/30 dark-theme:bg-slate-950/10 px-5 py-3 space-y-3 divide-y divide-slate-100 dark-theme:divide-slate-800/60">
+                        {sessions.map((session, idx) => {
+                          const rate = Math.round((session.present / session.total) * 100);
+                          const sessionTime = formatTimeOnly(session.created_at);
+                          return (
+                            <div key={session.created_at} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs ${idx > 0 ? 'pt-3' : ''}`}>
+                              <div className="space-y-1">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-bold text-slate-800 dark-theme:text-slate-200 text-sm">
+                                    {formatSubjectName(session.subject)}
+                                  </span>
+                                  <span className="text-slate-300 dark-theme:text-slate-700">•</span>
+                                  <span className="text-[10px] font-semibold text-slate-400">
+                                    {sessionTime}
+                                  </span>
                                 </div>
-
-                                <div className="flex items-center justify-end sm:justify-start">
-                                  <button
-                                    onClick={() => handleDownloadExcel(session.created_at)}
-                                    className="inline-flex items-center space-x-1.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 dark-theme:text-emerald-400 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                                  >
-                                    <FileSpreadsheet size={13} />
-                                    <span>Excel Report</span>
-                                  </button>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-slate-500 font-semibold text-[10px]">
+                                  <span>Total: {session.total}</span>
+                                  <span className="text-emerald-600 dark-theme:text-emerald-400">Present: {session.present}</span>
+                                  <span className="text-rose-600 dark-theme:text-rose-400">Absent: {session.absent}</span>
+                                  <span className="text-slate-700 dark-theme:text-slate-300 bg-slate-100 dark-theme:bg-slate-800/60 px-1.5 py-0.5 rounded">Rate: {rate}%</span>
                                 </div>
                               </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  );
-                });
-              })()}
+
+                              <div className="flex items-center justify-end sm:justify-start">
+                                <button
+                                  onClick={() => handleDownloadExcel(session.created_at)}
+                                  className="inline-flex items-center space-x-1.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-600 dark-theme:text-emerald-400 hover:text-white px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                >
+                                  <FileSpreadsheet size={13} />
+                                  <span>Excel Report</span>
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

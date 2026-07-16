@@ -46,7 +46,7 @@ Create `.env` files in both the frontend and backend root directories to load Go
 
 #### **Frontend** (`/frontend/.env`):
 ```env
-VITE_GOOGLE_CLIENT_ID=487926035288-1ski519qepmknmquff9bu8ees6mqf29h.apps.googleusercontent.com
+VITE_GOOGLE_CLIENT_ID=your-google-client-id-here.apps.googleusercontent.com
 ```
 
 #### **Backend** (`/backend/.env`):
@@ -54,8 +54,8 @@ VITE_GOOGLE_CLIENT_ID=487926035288-1ski519qepmknmquff9bu8ees6mqf29h.apps.googleu
 PORT=5000
 JWT_SECRET=super-secret-cr-key-2026
 VITE_API_URL=http://localhost:5000/api
-GOOGLE_CLIENT_ID=487926035288-1ski519qepmknmquff9bu8ees6mqf29h.apps.googleusercontent.com
-ALLOWED_CR_EMAIL=rishitha07888@gmail.com,231fa04394@gmail.com
+GOOGLE_CLIENT_ID=your-google-client-id-here.apps.googleusercontent.com
+ALLOWED_CR_EMAIL=your-actual-google-email@gmail.com
 ```
 
 ### 2. Start the Development Server

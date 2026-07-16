@@ -103,7 +103,7 @@ router.get('/history', async (req: Request, res: Response) => {
         SUM(CASE WHEN status = 'Absent' THEN 1 ELSE 0 END) as absent,
         COUNT(*) as total
       FROM attendance
-      GROUP BY created_at
+      GROUP BY created_at, date
       ORDER BY created_at DESC
     `;
     const history = await dbQuery.all<any>(sql);
@@ -112,7 +112,8 @@ router.get('/history', async (req: Request, res: Response) => {
     const formattedHistory = history.map((item) => {
       let createdAtStr = item.created_at;
       if (createdAtStr instanceof Date) {
-        createdAtStr = createdAtStr.toISOString().replace('T', ' ').substring(0, 19);
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        createdAtStr = `${createdAtStr.getFullYear()}-${pad(createdAtStr.getMonth() + 1)}-${pad(createdAtStr.getDate())} ${pad(createdAtStr.getHours())}:${pad(createdAtStr.getMinutes())}:${pad(createdAtStr.getSeconds())}`;
       } else if (typeof createdAtStr === 'string' && createdAtStr.includes('T')) {
         createdAtStr = createdAtStr.replace('T', ' ').substring(0, 19);
       }

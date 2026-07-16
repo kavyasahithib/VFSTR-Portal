@@ -161,6 +161,11 @@ async function initializeDatabase() {
       )
     `, isPostgres));
 
+    // Create indexes for performance optimization
+    await dbQuery.run('CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance (date)');
+    await dbQuery.run('CREATE INDEX IF NOT EXISTS idx_attendance_created_at ON attendance (created_at)');
+    await dbQuery.run('CREATE INDEX IF NOT EXISTS idx_attendance_student_id ON attendance (student_id)');
+
     // 4. Seed Default Admin CR User (only if users table is empty)
     const adminCount = await dbQuery.get<{ count: string | number }>(
       isPostgres ? 'SELECT COUNT(*) as count FROM users' : 'SELECT COUNT(*) as count FROM users'
